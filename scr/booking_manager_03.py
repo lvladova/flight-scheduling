@@ -8,9 +8,6 @@ from sceduling.sorters import merge_sort
 from cl.graph import Graph
 
 
-
-
-
 class BookingManager:
     def __init__(self, flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack, confirmed_passengers_stack, waitlisted_passengers_queue):
         self.flights_graph = flights_graph
@@ -21,33 +18,34 @@ class BookingManager:
         self.confirmed_passengers_stack = confirmed_passengers_stack
         self.waitlisted_passengers_queue = waitlisted_passengers_queue
 
-
-    def book_passenger(self, passenger, flight_number):
-        """ Attempt to book a passenger on a specific flight """
+    def book_passenger(self, passenger, flight_number, seat_class):
+        """ Attempt to book a passenger on a specific flight in a specific class """
         # Attempt to book using the graph and stack for LIFO behavior
         found_flight = None
         for flight in self.flights_table.search_by_flight_number(flight_number):  # Use the hash table for efficient searching
-            if flight[0] == flight_number and len(flight[4]) > 0:
+            if flight[0] == flight_number and len(flight[4][seat_class]) > 0:
                 found_flight = flight
                 break
 
         if found_flight:
-            seat = found_flight[4].pop()  # Remove the last seat (LIFO)
+            seat = found_flight[4][seat_class].pop()  # Remove the last seat (LIFO)
             passenger.append(seat)
+            passenger.append(seat_class)  # Add the seat class to the passenger data
             self.confirmed_passengers_stack.append(passenger)
             flight_node = self.flights_graph.get_node(flight_number)
             passenger_node = self.passengers_graph.get_node(passenger[0])
             if flight_node is not None and passenger_node is not None:
                 flight_node.add_data(passenger)  # Add the passenger data to the flight node
                 passenger_node.add_data(flight_number)  # Add the flight data to the passenger node
-            print(f"Passenger {passenger[1]} booked on flight {flight_number} with seat number {seat}.")
+            print(f"Passenger {passenger[1]} booked on flight {flight_number} with seat number {seat} in {seat_class} class.")
             return True
 
-        # No seats available, add to the queue
+        # No seats available, add to the waitlist for the specific class
+        passenger.append(seat_class)  # Add the seat class to the passenger data
         self.waitlisted_passengers_queue.append(passenger)
-        print(f"Passenger {passenger[1]} added to waitlist for flight {flight_number}.")
+        print(f"Passenger {passenger[1]} added to waitlist for flight {flight_number} in {seat_class} class.")
         return False
-    
+
     def cancel_booking(self, passenger_id, flight_number):
         """ Cancel a booking and manage the graph """
         found = False
@@ -56,9 +54,11 @@ class BookingManager:
             passenger = self.confirmed_passengers_stack.pop()
             if passenger[0] == passenger_id and passenger[4] == flight_number:
                 found = True
-                for flight in self.flights_table.search_by_flight_number(flight_number):  # Use the hash table for efficient searching
+                seat_class = passenger[-1]  # Get the seat class from the passenger data
+                for flight in self.flights_table.search_by_flight_number(
+                        flight_number):  # Use the hash table for efficient searching
                     if flight[0] == flight_number:
-                        flight[4].append(passenger[3])  # Return the seat to the flight stack
+                        flight[4][seat_class].append(passenger[3])  # Return the seat to the flight stack
                         break
                 flight_node = self.flights_graph.get_node(flight_number)
                 passenger_node = self.passengers_graph.get_node(passenger_id)
@@ -72,25 +72,43 @@ class BookingManager:
         while temp_stack:
             self.confirmed_passengers_stack.append(temp_stack.pop())
 
+        # Check if there are passengers on the waitlist for the flight
+        temp_queue = deque()
+        while self.waitlisted_passengers_queue:
+            passenger = self.waitlisted_passengers_queue.popleft()
+            if passenger[3] == flight_number and passenger[-1] == seat_class:
+                print(
+                    f"Passenger {passenger[1]} is on the waitlist for flight {flight_number} in {seat_class} class. Would you like to book them?")
+                # Here you can add code to handle user input and book the passenger if the user agrees
+                break
+            temp_queue.append(passenger)
+
+        # Add back the passengers not waitlisted for this flight to the waitlist queue
+        while temp_queue:
+            self.waitlisted_passengers_queue.append(temp_queue.popleft())
+
         return found
 
     def manage_waitlist(self, flight_number):
         """ Attempt to book waitlisted passengers on a specific flight """
         found_flight = None
         for flight in reversed(self.flights_stack):  # Check the most recently added flights first
-            if flight[0] == flight_number and len(flight[4]) > 0:
+            if flight[0] == flight_number:
                 found_flight = flight
                 break
 
         if found_flight:
             temp_queue = deque()  # Temporary queue to hold passengers not waitlisted for this flight
-            while self.waitlisted_passengers_queue and len(found_flight[4]) > 0:
+            while self.waitlisted_passengers_queue:
                 passenger = self.waitlisted_passengers_queue.popleft()
-                if passenger[3] != flight_number:  # If the passenger is not waitlisted for this flight
+                seat_class = passenger[-1]  # Get the seat class from the passenger data
+                # If the passenger is not waitlisted for this flight or there are no available seats in the requested class
+                if passenger[3] != flight_number or len(found_flight[4][
+                                                            seat_class]) == 0:
                     temp_queue.append(passenger)  # Add them to the temporary queue
                     continue  # Skip to the next passenger
 
-                seat = found_flight[4].pop()  # Remove the last seat (LIFO)
+                seat = found_flight[4][seat_class].pop()  # Remove the last seat (LIFO)
                 passenger.append(seat)
                 self.confirmed_passengers_stack.append(passenger)
                 flight_node = self.flights_graph.get_node(flight_number)
@@ -98,24 +116,54 @@ class BookingManager:
                 if flight_node is not None and passenger_node is not None:
                     flight_node.add_data(passenger)  # Add the passenger data to the flight node
                     passenger_node.add_data(flight_number)  # Add the flight data to the passenger node
-                print(f"Waitlisted passenger {passenger[1]} booked on flight {flight_number} with seat number {seat}.")
+                print(
+                    f"Waitlisted passenger {passenger[1]} booked on flight {flight_number} with seat number {seat} in {seat_class} class.")
 
             # Add back the passengers not waitlisted for this flight to the waitlist queue
             while temp_queue:
                 self.waitlisted_passengers_queue.append(temp_queue.popleft())
 
     def get_flight_info(self, flight_number):
-        node = self.flights_graph.get_node(flight_number)
-        if node:
-            flight_data = node.data
-            return f"Flight Number: {flight_data[0]}, Departure Airport: {flight_data[1]}, Arrival Airport: {flight_data[2]}, Date and Time: {flight_data[3]}"
+        """ Get the information for a flight """
+        flight_node = self.flights_graph.get_node(flight_number)
+        if flight_node is not None:
+            flight_data = flight_node.data
+            print(f"Flight Number: {flight_data[0]}")
+            print(f"Departure Airport: {flight_data[1]}")
+            print(f"Arrival Airport: {flight_data[2]}")
+            print(f"Date and Time: {flight_data[3]}")
+            print("Passenger Information:")
+            for passenger_node in self.passengers_graph.nodes.values():
+                passenger_data = passenger_node.data
+                if passenger_data[4] == flight_number:  # Check if the passenger's flight number matches
+                    print(
+                        f"Seat {passenger_data[3]}: Passenger ID: {passenger_data[0]}, Passenger Name: {passenger_data[1]}")
+        else:
+            print(f"Flight {flight_number} not found.")
 
     def get_passenger_status(self, passenger_id):
-        passenger_node = self.passengers_graph.get_node(passenger_id)
-        if passenger_node:
-            flights = passenger_node.data
-            return f"Passenger {passenger_id} is booked: Information: {flights}."
-        return f"Passenger {passenger_id} is not booked on any flight."
+        """ Get the status of a passenger """
+        # Check if the passenger is booked on any flight
+        for passenger in self.confirmed_passengers_stack:
+            if passenger[0] == passenger_id:
+                flight_number = passenger[4]
+                seat_class = passenger[-1]
+                flight_node = self.flights_graph.get_node(flight_number)
+                if flight_node is not None:
+                    flight_data = flight_node.data
+                    return f"Passenger {passenger_id} is booked on Flight {flight_data[0]} from {flight_data[1]} to {flight_data[2]} at {flight_data[3]} in {seat_class} class."
+
+        # Check if the passenger is on the waitlist for any flight
+        for i, passenger in enumerate(self.waitlisted_passengers_queue):
+            if passenger[0] == passenger_id:
+                flight_number = passenger[3]
+                seat_class = passenger[-1]
+                flight_node = self.flights_graph.get_node(flight_number)
+                if flight_node is not None:
+                    flight_data = flight_node.data
+                    return f"Passenger {passenger_id} is on the waitlist for Flight {flight_data[0]} from {flight_data[1]} to {flight_data[2]} at {flight_data[3]} in {seat_class} class. Position on waitlist: {i + 1}."
+
+        return f"Passenger {passenger_id} is not booked on any flight or on any waitlist."
 
 
 
@@ -148,60 +196,18 @@ def main():
 
     manager = BookingManager(flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack, confirmed_passengers_stack, waitlisted_passengers_queue)
 
-    manager.book_passenger([102500, "New Passenger", "Pending"], 1024)
+    manager.book_passenger([102500, "New Passenger", "Pending"], 1024, "Economy")
     manager.cancel_booking(102402, 1024)
 
     info = manager.get_flight_info(1024)
     print(info)
 
-    status = manager.get_passenger_status(102403)
+    status = manager.get_passenger_status(102432)
     print(status)
 
     waitlist_info = manager.manage_waitlist(1026)
     print(waitlist_info)
 
+
 if __name__ == '__main__':
     main()
-
-
-'''    
-    def manage_waitlist(self, flight_number):
-        # Assuming waitlisted_passengers_queue is a queue of passengers waiting for any flight
-        waitlisted_passengers = [passenger for passenger in self.waitlisted_passengers_queue if passenger[4] == flight_number]
-        return f"Flight {flight_number} has {len(waitlisted_passengers)} passengers on the waitlist."
-
-
-def add_flight(self, flight_number, departure, arrival, date):
-        flight = Flight(flight_number, departure, arrival, date)
-        self.graph.add_node(flight_number, flight)
-
-    def book_passenger(self, flight_number, passenger_id, seat_class):
-        node = self.graph.get_node(flight_number)
-        if node:
-            return node.data.book_seat(passenger_id, seat_class)
-        return "Flight not found."
-
-    def cancel_booking(self, flight_number, passenger_id):
-        flight = self.graph.get_node(flight_number).data
-        passenger = next((p for p in flight.passengers if p.passenger_id == passenger_id), None)
-        return flight.cancel_passenger(passenger)
-
-    def get_flight_info(self, flight_number):
-        flight = self.graph.get_node(flight_number).data
-        return flight.get_flight_info()
-
-    def get_passenger_status(self, passenger_id):
-        for node in self.graph.nodes.values():
-            flight = node.data
-            for seat_class, seats in flight.seats.items():
-                for seat in seats:
-                    if seat.passenger and seat.passenger.passenger_id == passenger_id:
-                        return f"{passenger_id} is booked on Flight {flight.flight_number} in {seat_class} class."
-                if passenger_id in [p.passenger_id for p in flight.waitlists[seat_class]]:
-                    return f"{passenger_id} is on the waitlist for Flight {flight.flight_number} in {seat_class} class."
-
-    def manage_waitlist(self, flight_number):
-        node = self.graph.get_node(flight_number)
-        if node:
-            return node.data.handle_waitlist()
-'''
