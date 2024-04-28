@@ -1,11 +1,5 @@
 from collections import deque
 
-from data.passengers_data import confirmed_passengers, waitlisted_passengers
-from data.flights_pile import flights as flights
-from sceduling.searchers import FlightHashTable, PassengerBST
-from sceduling.sorters import merge_sort
-from cl.graph import Graph
-
 
 class BookingManager:
     def __init__(self, flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack, confirmed_passengers_stack, waitlisted_passengers_queue):
@@ -207,48 +201,3 @@ class BookingManager:
                 count += 1
         # Check if there is available space in the class
         return count < class_capacity[seat_class]
-
-def main():
-
-    flights_graph = Graph()
-    passengers_graph = Graph()
-    flights_table = FlightHashTable()
-    passengers_tree = PassengerBST()
-    flights_stack = flights
-    confirmed_passengers_stack = confirmed_passengers
-    waitlisted_passengers_queue = deque(waitlisted_passengers)
-
-    # Add the flights to the flights graph
-    for flight in merge_sort(flights, '0'):  # Sort by flight number
-        if flight is not None and len(flight) > 0:
-            flights_graph.add_node(flight[0], flight)
-            flights_table.insert(flight)
-
-    # Add the confirmed passengers to the passengers graph
-    for passenger in confirmed_passengers:
-        if passenger is not None and len(passenger) > 0:
-            passengers_graph.add_node(passenger[0], passenger)
-            passengers_tree.insert(passenger)
-
-    for passenger in waitlisted_passengers:
-        if passenger is not None and len(passenger) > 0:
-            passengers_graph.add_node(passenger[0], passenger)
-            passengers_tree.insert(passenger)
-
-    manager = BookingManager(flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack, confirmed_passengers_stack, waitlisted_passengers_queue)
-
-    manager.book_passenger([102500, "New Passenger", "Pending"], 1024, "Economy")
-    manager.cancel_booking(102402, 1024)
-
-    info = manager.get_flight_info(1024)
-    print(info)
-
-    status = manager.get_passenger_status(102432)
-    print(status)
-
-    waitlist_info = manager.manage_waitlist(1026)
-    print(waitlist_info)
-
-
-if __name__ == '__main__':
-    main()

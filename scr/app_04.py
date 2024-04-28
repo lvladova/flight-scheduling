@@ -1,7 +1,8 @@
 import streamlit as st
+from collections import deque
+
 from booking_manager_03 import BookingManager
 from cl.graph import Graph
-from collections import deque
 from data.passengers_data import confirmed_passengers, waitlisted_passengers
 from data.flights_pile import flights as flights
 from sceduling.searchers import FlightHashTable, PassengerBST
@@ -55,6 +56,7 @@ def book_passenger():
     else:
         st.error("Please enter all the details.")
 
+
 def cancel_passenger():
     if st.session_state.cancellation_passenger_id and st.session_state.cancellation_flight_number:
         passenger_id = int(st.session_state.cancellation_passenger_id)
@@ -103,8 +105,6 @@ def check_flight_info():
     else:
         st.error("Please enter the flight number.")
 
-def main():
-    st.title("Flight Booking System")
 
 def main():
     st.title("Flight Booking System")
@@ -129,7 +129,6 @@ def main():
     with st.expander("Check Flight Information"):
         st.text_input("Enter Flight Number", value=st.session_state.get('flight_number', ''), key='flight_number')
         st.button("Check Flight Info", on_click=check_flight_info)
-
 
 
 if __name__ == "__main__":
