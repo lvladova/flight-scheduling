@@ -117,6 +117,7 @@ waitlisted_passengers = [
     [102835, "William James", "Waitlisted", 1028]
 ]
 '''
+
 confirmed_passengers = [
     # Flight 1024
     [102402, "Michael Jones", "Confirmed", 2, 1024, "First"],
