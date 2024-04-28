@@ -137,16 +137,20 @@ class BookingManager:
         flight_node = self.flights_graph.get_node(flight_number)
         if flight_node is not None:
             flight_data = flight_node.data
-            print(f"Flight Number: {flight_data[0]}")
-            print(f"Departure Airport: {flight_data[1]}")
-            print(f"Arrival Airport: {flight_data[2]}")
-            print(f"Date and Time: {flight_data[3]}")
-            print("Passenger Information:")
+            info_lines = []
+            info_lines.append(f"Flight Number: {flight_data[0]}")
+            info_lines.append(f"Departure Airport: {flight_data[1]}")
+            info_lines.append(f"Arrival Airport: {flight_data[2]}")
+            info_lines.append(f"Date and Time: {flight_data[3]}")
+            info_lines.append("Passenger Information:")
+
             for passenger_node in self.passengers_graph.nodes.values():
                 passenger_data = passenger_node.data
                 if passenger_data[4] == flight_number:  # Check if the passenger's flight number matches
-                    print(
+                    info_lines.append(
                         f"Seat {passenger_data[3]}: Passenger ID: {passenger_data[0]}, Passenger Name: {passenger_data[1]}")
+
+            return "\n".join(info_lines)
         else:
             print(f"Flight {flight_number} not found.")
 
