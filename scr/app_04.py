@@ -35,32 +35,39 @@ for passenger in waitlisted_passengers:
 manager = BookingManager(flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack,
                          confirmed_passengers_stack, waitlisted_passengers_queue)
 
-st.title('Flight Booking System')
 
-flight_number = st.text_input('Enter flight number')
-passenger_id = st.text_input('Enter passenger ID')
-seat_class = st.selectbox('Select seat class', ['First', 'Business', 'Economy'])
-
-if st.button('Book Passenger'):
-    result = manager.book_passenger(passenger_id, flight_number)
-    st.write(result)
-
-if st.button('Cancel Booking'):
-    result = manager.cancel_booking(passenger_id, flight_number)
-    if result:
-        passenger_name = [p[1] for p in confirmed_passengers if p[0] == int(passenger_id)][0]
-        st.success(f"Booking cancelled for {passenger_name} on flight {flight_number}")
+def book_passenger():
+    if st.session_state.passenger_name and st.session_state.passenger_id and st.session_state.flight_number and st.session_state.seat_class:
+        passenger_id = int(st.session_state.passenger_id)
+        flight_number = int(st.session_state.flight_number)
+        # Attempt to book the passenger
+        success = manager.book_passenger([passenger_id, st.session_state.passenger_name, "Pending"], flight_number, st.session_state.seat_class)
+        if success:
+            st.success(f"Passenger {st.session_state.passenger_name} ({passenger_id}) booked on flight {flight_number} in {st.session_state.seat_class} class.")
+        else:
+            # If booking failed, check if the passenger is already booked or waitlisted
+            if manager.is_passenger_booked_or_waitlisted(passenger_id, flight_number):
+                st.error(f"Passenger {st.session_state.passenger_name} ({passenger_id}) is already booked or waitlisted for flight {flight_number}.")
+            else:
+                # If the passenger is not already booked or waitlisted, add the passenger to the waitlist
+                manager.waitlisted_passengers_queue.append([passenger_id, st.session_state.passenger_name, "Waitlisted", flight_number, st.session_state.seat_class])
+                st.success(f"Passenger {st.session_state.passenger_name} ({passenger_id}) added to waitlist for flight {flight_number} in {st.session_state.seat_class} class.")
     else:
-        st.write(result)
+        st.error("Please enter all the details.")
 
-if st.button('Get Flight Info'):
-    result = manager.get_flight_info(flight_number)
-    st.write(result)
 
-if st.button('Get Passenger Status'):
-    result = manager.get_passenger_status(passenger_id)
-    st.write(result)
+def main():
+    st.title("Flight Booking System")
 
-if st.button('Manage Waitlist'):
-    result = manager.manage_waitlist(flight_number)
-    st.write(result)
+    st.header("Book a Passenger")
+    st.text_input("Enter Passenger Name", value=st.session_state.get('passenger_name', ''), key='passenger_name')
+    st.text_input("Enter Passenger ID", value=st.session_state.get('passenger_id', ''), key='passenger_id')
+    st.text_input("Enter Flight Number", value=st.session_state.get('flight_number', ''), key='flight_number')
+    seat_classes = ["First", "Business", "Economy"]
+    st.selectbox("Choose a Class", seat_classes, index=seat_classes.index(st.session_state.get('seat_class', seat_classes[0])), key='seat_class')
+
+    st.button("Book Passenger", on_click=book_passenger)
+
+
+if __name__ == "__main__":
+    main()

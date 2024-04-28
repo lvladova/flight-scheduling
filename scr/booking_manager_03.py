@@ -1,4 +1,3 @@
-import streamlit as st
 from collections import deque
 
 from data.passengers_data import confirmed_passengers, waitlisted_passengers
@@ -22,7 +21,17 @@ class BookingManager:
         """ Attempt to book a passenger on a specific flight in a specific class """
         # Attempt to book using the graph and stack for LIFO behavior
         found_flight = None
-        for flight in self.flights_table.search_by_flight_number(flight_number):  # Use the hash table for efficient searching
+
+        if self.is_passenger_booked_or_waitlisted(passenger[0], flight_number):
+            print(f"Passenger {passenger[1]} is already booked or waitlisted for flight {flight_number}.")
+            return False
+
+        if not self.is_seat_class_available(flight_number, seat_class):
+            print(f"No available space in {seat_class} class for flight {flight_number}.")
+            return False
+
+        # Use the hash table for efficient searching
+        for flight in self.flights_table.search_by_flight_number(flight_number):
             if flight[0] == flight_number and len(flight[4][seat_class]) > 0:
                 found_flight = flight
                 break
@@ -165,7 +174,35 @@ class BookingManager:
 
         return f"Passenger {passenger_id} is not booked on any flight or on any waitlist."
 
+    def is_passenger_booked_or_waitlisted(self, passenger_id, flight_number):
+        """ Check if a passenger is already booked or waitlisted for a flight """
+        # Check if the passenger is booked on the flight
+        for passenger in self.confirmed_passengers_stack:
+            if passenger[0] == passenger_id and passenger[4] == flight_number:
+                return True
 
+        # Check if the passenger is on the waitlist for the flight
+        for passenger in self.waitlisted_passengers_queue:
+            if passenger[0] == passenger_id and passenger[3] == flight_number:
+                return True
+
+        return False
+
+    def is_seat_class_available(self, flight_number, seat_class):
+        """ Check if there is available space in a specific class for a flight """
+        # Define the capacity of each class
+        class_capacity = {
+            "First": 10,
+            "Business": 20,
+            "Economy": 70
+        }
+        # Count the number of passengers booked in the requested class
+        count = 0
+        for passenger in self.confirmed_passengers_stack:
+            if passenger[4] == flight_number and passenger[-1] == seat_class:
+                count += 1
+        # Check if there is available space in the class
+        return count < class_capacity[seat_class]
 
 def main():
 
