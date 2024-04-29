@@ -1,11 +1,31 @@
 # Flight Scheduling System
 
 ## Description
-The Flight Scheduling System is designed to manage and operate flight bookings, including scheduling, passenger management, and waitlisting. It supports various operations such as scheduling a passenger for a flight, canceling a booking, and querying flight and passenger status.
+The Flight Scheduling System is designed to manage and operate flight bookings, including scheduling, passenger management, and waitlisting. It supports various operations such as scheduling a passenger for a flight, canceling a booking, and querying flight and passenger status. 
 
 ## System Structure
 flight-scheduling
 
+📁 flight-scheduling
+│
+├── 📁 src                  # Source files
+│   ├── 📄 app_04.py           # Main application file
+│   ├── 📄 booking_manager_03.py    # Configuration settings for the app
+│   ├── 📁 data                 # Data files
+│       └── 📄 flights_pile.py       # storing flight data
+│       └── 📄 passenger_data.py       # storing passengers data
+│   ├── 📁 cl                 # class files 
+│       └── 📄 graph.py       # graph structure
+│   ├── 📁 sceduling                 # Algorithms
+│       └── 📄 searchers.py       # Searchering algorithms
+│       └── 📄 sorters.py       # Sorting algorithms
+└── 📄 requirements.txt     # Project dependencies
+│
+└── 📄 README.md     # readme file
+│
+└── 📄 requirements.txt     # Project dependencies
+│
+└── 📄 .gitignore    
 
 
 ## Features
@@ -38,6 +58,8 @@ pip install -r requirements.txt
 
 ### Usage
 Run the system with:
+
+stremlit run dir/app_04.py
 
 
 
