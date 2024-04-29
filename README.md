@@ -64,9 +64,3 @@ stremlit run dir/app_04.py
 
 
 
-## Testing
-To run the tests, use the following command from the root directory:
-
-python -m unittest discover tests
-
-
