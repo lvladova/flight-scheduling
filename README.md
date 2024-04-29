@@ -1,12 +1,12 @@
 
-## Flight Scheduling Application
+# Flight Scheduling Application
 
-# Description
+## Description
 This Flight Scheduling Application is designed as an educational project to deepen understanding of fundamental algorithmic concepts through practical application. The primary goal is to explore the design and functionality of fundamental searching, sorting, and traversing algorithms, comprehend various methodologies for assessing the efficiency of algorithms, and compare them based on performance metrics including time and space considerations.
 
 For this assignment, the application facilitates the booking and scheduling of flights, utilizing a variety of data structures covered in lectures. Users can schedule passengers, cancel bookings, and check passenger statuses, all while managing a realistic simulation of flight properties and seating arrangements.
 
-# Flight Properties
+## Flight Properties
 Each flight in the application has several attributes:
 
 Flight Number: Integer from 0 to 999.
@@ -17,15 +17,17 @@ Seating List: Divided into three classes:
 First Class: Example - 5 seats (Seats 1, 2, 3, 4, 5)
 Business Class: Example - 10 seats (Seats 6 - 15)
 Economy Class: Example - 20 seats (Seats 16 - 35)
-Features
+## Features
 Schedule a Passenger: Select a flight and class. If full, add to a waitlist specific to each class.
 Cancel a Passenger: Remove a passenger and potentially fill the spot from the waitlist, updating the next passenger's status.
 Passenger Status: Display detailed flight info for both scheduled passengers and those on waitlists.
 Flight Information: Print comprehensive details including airports, date, seating, and passenger names.
 Algorithm and Data Structure Requirements
+
+
+## Data Structures: Queues, piles, graphs, or trees as discussed in lectures.
 This project incorporates at least one of each:
 
-# Data Structures: Queues, piles, graphs, or trees as discussed in lectures.
 Sorting Algorithms: Merge Sort, Quick Sort, Radix Sort and others
 Searching Algorithms: Hash Table Searching and Binary Search Trees (BST)
 The design encourages thinking about algorithmic efficiency and data handling, with potential future extensions to include more sophisticated structures and algorithms as the course progresses.
