@@ -1,5 +1,4 @@
-
-#for sorting through departure time and and flight number
+# Merge sort algorithm for sorting objects based on a given attribute
 def merge_sort(objects, attribute):
     if len(objects) > 1:
         mid = len(objects) // 2
@@ -37,7 +36,7 @@ def merge_sort(objects, attribute):
     return objects
 
 
-#sorting through passenger id
+# Bucket sort algorithm for sorting objects based on a given attribute
 def bucket_sort(objects, attribute, bucket_size=5):
     if len(objects) == 0:
         return []
@@ -70,6 +69,8 @@ def bucket_sort(objects, attribute, bucket_size=5):
 
     return sorted_objects
 
+
+# Insertion sort algorithm for sorting objects based on a given attribute
 def insertion_sort(objects, attribute):
     for i in range(1, len(objects)):
         key_item = objects[i]
@@ -82,7 +83,8 @@ def insertion_sort(objects, attribute):
         objects[j + 1] = key_item
     return objects
 
-#sorting through passenger names
+
+# Quick sort algorithm for sorting objects based on a given attribute
 def quick_sort(arr, key=lambda x: x):
     if len(arr) <= 1:
         return arr
@@ -92,6 +94,8 @@ def quick_sort(arr, key=lambda x: x):
     right = [x for x in arr if key(x) > key(pivot)]
     return quick_sort(left, key) + middle + quick_sort(right, key)
 
+
+# Counting sort algorithm for sorting objects based on a given attribute
 def counting_sort(objects, get_attribute, position):
     output = [None] * len(objects)
     count = [0] * 256
@@ -114,6 +118,8 @@ def counting_sort(objects, get_attribute, position):
 
     return output
 
+
+# Radix sort algorithm for sorting objects based on a given attribute
 def radix_sort(objects, get_attribute):
     if not objects:
         return objects

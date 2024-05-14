@@ -1,6 +1,5 @@
 import streamlit as st
 from collections import deque
-
 from booking_manager_03 import BookingManager
 from cl.graph import Graph
 from data.passengers_data import confirmed_passengers, waitlisted_passengers
@@ -8,79 +7,90 @@ from data.flights_pile import flights as flights
 from sceduling.searchers import FlightHashTable, PassengerBST
 from sceduling.sorters import merge_sort
 
-flights_graph = Graph()
-passengers_graph = Graph()
-flights_table = FlightHashTable()
-passengers_tree = PassengerBST()
-flights_stack = flights
-confirmed_passengers_stack = confirmed_passengers
-waitlisted_passengers_queue = deque(waitlisted_passengers)
+# Create graphs, tables, and stacks for flights and passengers
+flights_graph = Graph()  # Graph to store flight information
+passengers_graph = Graph()  # Graph to store passenger information
+flights_table = FlightHashTable()  # Hash table to quickly search flights
+passengers_tree = PassengerBST()  # Binary search tree to quickly search passengers
+flights_stack = flights  # Stack to store flights
+confirmed_passengers_stack = confirmed_passengers  # Stack to store confirmed passengers
+waitlisted_passengers_queue = deque(waitlisted_passengers)  # Queue to store waitlisted passengers
 
 # Add the flights to the flights graph
-for flight in merge_sort(flights, '0'):  # Sort by flight number
+for flight in merge_sort(flights, '0'):  # Sort flights by flight number
     if flight is not None and len(flight) > 0:
-        flights_graph.add_node(flight[0], flight)
-        flights_table.insert(flight)
+        flights_graph.add_node(flight[0], flight)  # Add flight to the graph
+        flights_table.insert(flight)  # Insert flight into the hash table
 
 # Add the confirmed passengers to the passengers graph
 for passenger in confirmed_passengers:
     if passenger is not None and len(passenger) > 0:
-        passengers_graph.add_node(passenger[0], passenger)
-        passengers_tree.insert(passenger)
+        passengers_graph.add_node(passenger[0], passenger)  # Add passenger to the graph
+        passengers_tree.insert(passenger)  # Insert passenger into the binary search tree
 
+# Add the waitlisted passengers to the passengers graph
 for passenger in waitlisted_passengers:
     if passenger is not None and len(passenger) > 0:
-        passengers_graph.add_node(passenger[0], passenger)
-        passengers_tree.insert(passenger)
+        passengers_graph.add_node(passenger[0], passenger)  # Add passenger to the graph
+        passengers_tree.insert(passenger)  # Insert passenger into the binary search tree
 
-manager = BookingManager(flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack,
+# Create the BookingManager and store it in the session state
+if 'manager' not in st.session_state:
+    st.session_state['manager'] = BookingManager(flights_graph, passengers_graph, flights_table, passengers_tree, flights_stack,
                          confirmed_passengers_stack, waitlisted_passengers_queue)
+else:
+    manager = st.session_state['manager']
 
 
 def book_passenger():
+    # Check if all the required details are entered
     if st.session_state.booking_passenger_name and st.session_state.booking_passenger_id and st.session_state.booking_flight_number and st.session_state.seat_class:
         passenger_id = int(st.session_state.booking_passenger_id)
         flight_number = int(st.session_state.booking_flight_number)
-        # Attempt to book the passenger
-        success = manager.book_passenger([passenger_id, st.session_state.booking_passenger_name, "Pending"], flight_number, st.session_state.seat_class)
-        if success:
-            st.success(f"Passenger {st.session_state.booking_passenger_name} ({passenger_id}) booked on flight {flight_number} in {st.session_state.seat_class} class.")
+
+        # Check if the passenger is already booked or waitlisted
+        if st.session_state['manager'].is_passenger_booked_or_waitlisted(passenger_id, flight_number):
+            st.error(f"Passenger {st.session_state.booking_passenger_name} ({passenger_id}) is already booked or waitlisted for flight {flight_number}.")
         else:
-            # If booking failed, check if the passenger is already booked or waitlisted
-            if manager.is_passenger_booked_or_waitlisted(passenger_id, flight_number):
-                st.error(f"Passenger {st.session_state.booking_passenger_name} ({passenger_id}) is already booked or waitlisted for flight {flight_number}.")
+            # Attempt to book the passenger
+            result = st.session_state['manager'].book_passenger([passenger_id, st.session_state.booking_passenger_name, "Pending"], flight_number, st.session_state.seat_class)
+            if isinstance(result, str):
+                st.success(result)
             else:
-                # If the passenger is not already booked or waitlisted, add the passenger to the waitlist
-                manager.waitlisted_passengers_queue.append([passenger_id, st.session_state.booking_passenger_name, "Waitlisted", flight_number, st.session_state.seat_class])
+                # If booking failed, add the passenger to the waitlist
+                st.session_state['manager'].waitlisted_passengers_queue.append([passenger_id, st.session_state.booking_passenger_name, "Waitlisted", flight_number, st.session_state.seat_class])
                 st.success(f"Passenger {st.session_state.booking_passenger_name} ({passenger_id}) added to waitlist for flight {flight_number} in {st.session_state.seat_class} class.")
     else:
         st.error("Please enter all the details.")
 
 
 def cancel_passenger():
+    # Check if all the required details are entered
     if st.session_state.cancellation_passenger_id and st.session_state.cancellation_flight_number:
         passenger_id = int(st.session_state.cancellation_passenger_id)
         flight_number = int(st.session_state.cancellation_flight_number)
         # Attempt to cancel the booking
-        success = manager.cancel_booking(passenger_id, flight_number)
+        success = st.session_state['manager'].cancel_booking(passenger_id, flight_number)
         if success:
             st.success(f"Passenger {passenger_id} cancelled from flight {flight_number}.")
             # Check if there are passengers on the waitlist for the flight
-            for i, passenger in enumerate(manager.waitlisted_passengers_queue):
-                if passenger[3] == flight_number:
-                    st.info(f"Passenger {passenger[1]} ({passenger[0]}) is on the waitlist for flight {flight_number} in {passenger[-1]} class. Would you like to book them?")
-                    return True  # Return True to indicate that there are waitlisted passengers
+            messages = st.session_state['manager'].manage_waitlist(flight_number)
+            if messages:
+                for message in messages:
+                    st.success(message)
+            else:
+                st.info("No waitlisted passengers for this flight.")
         else:
             st.error(f"Could not cancel booking for passenger {passenger_id} from flight {flight_number}.")
     else:
         st.error("Please enter all the details.")
-    return False  # Return False to indicate that there are no waitlisted passengers
 
 
 def check_passenger_status():
+    # Check if the passenger ID is entered
     if st.session_state.status_passenger_id:
         passenger_id = int(st.session_state.status_passenger_id)
-        status = manager.get_passenger_status(passenger_id)
+        status = st.session_state['manager'].get_passenger_status(passenger_id)
         if status:
             st.success(status)
         else:
@@ -92,7 +102,7 @@ def check_passenger_status():
 def check_flight_info():
     flight_number = st.session_state.get('flight_number')
     if flight_number:
-        flight_info = manager.get_flight_info(int(flight_number))
+        flight_info = st.session_state['manager'].get_flight_info(int(flight_number))
         if "not found" not in flight_info:
             st.success(f"Flight {flight_number} found.")
             if isinstance(flight_info, list):  # Check if the flight_info is a list
