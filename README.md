@@ -40,6 +40,7 @@ flight-scheduling
 ├── 📁 src                  # Source files
 │   ├── 📄 app_04.py           # Main application file
 │   ├── 📄 booking_manager_03.py    # Configuration settings for the app
+│   ├── 📄 unit_tests.py           # Unit testing
 │   ├── 📁 data                 # Data files
 │       └── 📄 flights_pile.py       # storing flight data
 │       └── 📄 passenger_data.py       # storing passengers data
