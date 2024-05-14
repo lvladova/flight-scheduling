@@ -91,6 +91,8 @@ Run the system with:
 
 stremlit run dir/app_04.py
 
+or visit: https://flightscheduling1.streamlit.app/
+
 
 
 
